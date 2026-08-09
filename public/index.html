@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- Primary SEO -->
+  <title>BINGO — Play Online Multiplayer Bingo Game with Friends</title>
+  <meta name="description"
+    content="Play BINGO online with a friend! Create a room, share the 6-letter code, fill your 5×5 grid, and race to complete 5 lines first. Free, real-time, no download needed.">
+  <meta name="keywords"
+    content="bingo, online bingo, multiplayer bingo, 2 player bingo, bingo game, play bingo online, free bingo game, real-time bingo">
+  <meta name="author" content="Vicky Sindhwad">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://https://viku53.github.io/bingo/">
+
+  <!-- Theme & Mobile -->
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BINGO">
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BINGO — Play Online with Friends">
+  <meta property="og:description"
+    content="Create a room, share the code, and play real-time BINGO with a friend from anywhere. Free and instant!">
+  <meta property="og:url" content="https://viku53.github.io/bingo/">
+  <meta property="og:site_name" content="BINGO Online">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BINGO — Online Multiplayer Game">
+  <meta name="twitter:description"
+    content="Challenge a friend to real-time BINGO! Create a room, share the code, and race to spell B-I-N-G-O first.">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "BINGO Online",
+    "description": "A real-time 2-player online BINGO game. Create a room, share the code, fill your 5×5 grid, and race to complete 5 lines first.",
+    "url": "https://viku53.github.io/bingo/",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Vicky Sindhwad"
+    }
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fredoka:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- ===== WELCOME SCREEN ===== -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-container">
+        <div class="logo-glow"></div>
+        <h1 class="game-title">
+          <span class="letter" style="--i:0">B</span>
+          <span class="letter" style="--i:1">I</span>
+          <span class="letter" style="--i:2">N</span>
+          <span class="letter" style="--i:3">G</span>
+          <span class="letter" style="--i:4">O</span>
+        </h1>
+        <p class="tagline">Online Multiplayer</p>
+
+        <div class="welcome-actions">
+          <div class="input-group name-input-group">
+            <label for="input-name">Your Name</label>
+            <input type="text" id="input-name" placeholder="Enter your name..." maxlength="12" autocomplete="off">
+          </div>
+          <div class="action-buttons">
+            <button id="btn-create" class="btn btn-primary btn-glow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>Create Room</span>
+            </button>
+            <button id="btn-join-show" class="btn btn-secondary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+              </svg>
+              <span>Join Room</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Join Form (hidden by default) -->
+        <div class="join-form hidden" id="join-form">
+          <div class="input-group">
+            <label for="input-code">Room Code</label>
+            <input type="text" id="input-code" placeholder="Enter 6-letter code..." maxlength="6" autocomplete="off"
+              class="code-input">
+          </div>
+          <button id="btn-join" class="btn btn-primary">
+            <span>Join Game</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div class="join-error hidden" id="join-error"></div>
+        </div>
+
+        <div class="rules-hint">
+          <button id="btn-rules" class="btn btn-ghost">How to Play?</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== RULES MODAL ===== -->
+    <div id="modal-rules" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content glass-card">
+        <button class="modal-close" id="btn-close-rules">&times;</button>
+        <h2>How to Play</h2>
+        <div class="rules-list">
+          <div class="rule-item">
+            <div class="rule-icon">🏠</div>
+            <div>
+              <strong>Create or Join a Room</strong>
+              <p>One player creates a room and shares the 6-letter code. The other joins using the code.</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">📝</div>
+            <div>
+              <strong>Set Up Your Grid</strong>
+              <p>Each player fills a 5×5 grid with numbers 1–25. Place them manually or use Random.</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">🪙</div>
+            <div>
+              <strong>Coin Toss</strong>
+              <p>The server flips a coin to decide who goes first.</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">🔢</div>
+            <div>
+              <strong>Call Numbers</strong>
+              <p>On your turn, call any uncalled number (1–25). It gets marked on <em>both</em> grids.</p>
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">🏆</div>
+            <div>
+              <strong>Win!</strong>
+              <p>Complete 5 lines (rows, columns, or diagonals) to spell <strong>BINGO</strong> and win!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WAITING SCREEN ===== -->
+    <section id="screen-waiting" class="screen">
+      <div class="waiting-container">
+        <div class="waiting-icon">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring delay"></div>
+          <span class="waiting-emoji">🎯</span>
+        </div>
+        <h2 class="section-title">Waiting for Opponent</h2>
+        <p class="waiting-text">Share this room code with your friend:</p>
+        <div class="room-code-display" id="room-code-display">
+          <span class="code-char" id="code-chars">------</span>
+        </div>
+        <button id="btn-copy-code" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+          <span>Copy Code</span>
+        </button>
+        <p class="copy-feedback hidden" id="copy-feedback">Copied! ✓</p>
+      </div>
+    </section>
+
+    <!-- ===== GRID SETUP SCREEN ===== -->
+    <section id="screen-setup" class="screen">
+      <div class="setup-container">
+        <h2 class="section-title">Fill Your Grid</h2>
+        <p class="setup-subtitle">Place numbers 1–25 in any order. Your opponent can't see your layout!</p>
+
+        <div class="opponent-status" id="opponent-status">
+          <div class="status-dot"></div>
+          <span>Opponent is setting up...</span>
+        </div>
+
+        <div class="grid-wrapper">
+          <div class="bingo-grid fill-mode" id="fill-grid"></div>
+        </div>
+
+        <div class="fill-info">
+          <div class="remaining-numbers" id="remaining-numbers"></div>
+        </div>
+
+        <div class="fill-actions">
+          <button id="btn-clear-grid" class="btn btn-ghost">Clear</button>
+          <button id="btn-fill-random" class="btn btn-secondary">Random</button>
+          <button id="btn-confirm-grid" class="btn btn-primary" disabled>
+            <span>Lock In Grid</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COIN TOSS SCREEN ===== -->
+    <section id="screen-coin-toss" class="screen">
+      <div class="coin-toss-container">
+        <h2 class="section-title">Coin Toss</h2>
+        <p class="coin-toss-subtitle">Deciding who goes first...</p>
+        <div class="coin-wrapper">
+          <div class="coin" id="coin">
+            <div class="coin-face coin-heads"><span>⭐</span></div>
+            <div class="coin-face coin-tails"><span>🌙</span></div>
+          </div>
+        </div>
+        <div class="toss-result" id="toss-result"></div>
+      </div>
+    </section>
+
+    <!-- ===== GAME SCREEN ===== -->
+    <section id="screen-game" class="screen">
+      <div class="game-container">
+        <!-- Top Bar -->
+        <div class="game-top-bar">
+          <div class="player-info you-info">
+            <span class="info-name" id="your-name-display">You</span>
+            <div class="bingo-letters small" id="bingo-you">
+              <span class="bingo-letter" data-index="0">B</span>
+              <span class="bingo-letter" data-index="1">I</span>
+              <span class="bingo-letter" data-index="2">N</span>
+              <span class="bingo-letter" data-index="3">G</span>
+              <span class="bingo-letter" data-index="4">O</span>
+            </div>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="player-info opp-info">
+            <span class="info-name" id="opp-name-display">Opponent</span>
+            <div class="bingo-letters small" id="bingo-opp">
+              <span class="bingo-letter" data-index="0">B</span>
+              <span class="bingo-letter" data-index="1">I</span>
+              <span class="bingo-letter" data-index="2">N</span>
+              <span class="bingo-letter" data-index="3">G</span>
+              <span class="bingo-letter" data-index="4">O</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Turn Indicator -->
+        <div class="turn-indicator" id="turn-indicator">
+          <div class="turn-dot"></div>
+          <span id="turn-text">Your Turn — Call a Number!</span>
+        </div>
+
+        <!-- Your Grid -->
+        <div class="your-board">
+          <div class="bingo-grid game-mode" id="game-grid"></div>
+        </div>
+
+        <!-- Number Pad -->
+        <div class="number-pad-section">
+          <div class="number-pad" id="number-pad"></div>
+        </div>
+
+        <!-- Called Numbers -->
+        <div class="called-numbers-section">
+          <div class="called-label">Called Numbers</div>
+          <div class="called-numbers" id="called-numbers"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GAME OVER SCREEN ===== -->
+    <section id="screen-gameover" class="screen">
+      <div class="gameover-container">
+        <div class="result-icon" id="result-icon">🏆</div>
+        <h2 class="result-title" id="result-title">You Win!</h2>
+        <div class="winner-bingo">
+          <span class="win-letter" style="--i:0">B</span>
+          <span class="win-letter" style="--i:1">I</span>
+          <span class="win-letter" style="--i:2">N</span>
+          <span class="win-letter" style="--i:3">G</span>
+          <span class="win-letter" style="--i:4">O</span>
+        </div>
+        <p class="result-subtitle" id="result-subtitle">You completed 5 lines first!</p>
+        <button id="btn-play-again" class="btn btn-primary btn-glow">Play Again</button>
+        <button id="btn-home" class="btn btn-ghost">Back to Home</button>
+      </div>
+      <canvas id="confetti-canvas"></canvas>
+    </section>
+
+    <!-- ===== DISCONNECTED OVERLAY ===== -->
+    <div id="overlay-disconnect" class="overlay hidden">
+      <div class="overlay-content glass-card">
+        <div class="overlay-icon">😢</div>
+        <h3>Opponent Disconnected</h3>
+        <p id="disconnect-text">Your opponent left the game.</p>
+        <button id="btn-back-home" class="btn btn-primary">Back to Home</button>
+      </div>
+    </div>
+
+    <!-- ===== CONNECTION STATUS ===== -->
+    <div class="connection-status" id="connection-status">
+      <div class="conn-dot"></div>
+      <span>Connected</span>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+
+</html>
