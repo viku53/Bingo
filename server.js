@@ -12,6 +12,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
+  // Keep connections alive during brief interruptions (mobile tab switch)
+  pingTimeout: 30000,
+  pingInterval: 10000,
 });
 
 // Serve static files
@@ -19,14 +22,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ==================== ROOM MANAGEMENT ====================
 const rooms = new Map();
+// Map sessionId -> { roomCode, playerIndex } for reconnection
+const sessions = new Map();
 
 function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusing chars
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
-  // Ensure uniqueness
   if (rooms.has(code)) return generateRoomCode();
   return code;
 }
@@ -51,19 +55,26 @@ for (let c = 0; c < 5; c++) {
 LINES.push([0, 6, 12, 18, 24]);
 LINES.push([4, 8, 12, 16, 20]);
 
-function createRoom(code, hostSocket, hostName) {
+function createPlayerState(socketId, name, sessionId) {
+  return {
+    socketId,
+    sessionId,
+    name,
+    grid: [],
+    marked: new Set(),
+    completedLines: 0,
+    completedLineKeys: new Set(),
+    ready: false,
+    wantsRematch: false,
+    connected: true,
+  };
+}
+
+function createRoom(code, hostSocket, hostName, sessionId) {
   return {
     code,
     players: [
-      {
-        socketId: hostSocket.id,
-        name: hostName,
-        grid: [],
-        marked: new Set(),
-        completedLines: 0,
-        completedLineKeys: new Set(),
-        ready: false,
-      },
+      createPlayerState(hostSocket.id, hostName, sessionId),
       null,
     ],
     calledNumbers: [],
@@ -88,6 +99,12 @@ function getPlayerIndex(room, socketId) {
   return -1;
 }
 
+function getPlayerBySession(room, sessionId) {
+  if (room.players[0] && room.players[0].sessionId === sessionId) return 0;
+  if (room.players[1] && room.players[1].sessionId === sessionId) return 1;
+  return -1;
+}
+
 function checkLines(player) {
   let newLines = [];
   LINES.forEach((line, lineIndex) => {
@@ -103,25 +120,101 @@ function checkLines(player) {
   return newLines;
 }
 
+function resetPlayerForNewGame(player) {
+  player.grid = [];
+  player.marked = new Set();
+  player.completedLines = 0;
+  player.completedLineKeys = new Set();
+  player.ready = false;
+  player.wantsRematch = false;
+}
+
 // ==================== SOCKET.IO EVENTS ====================
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
+  // --- REJOIN (reconnection after tab switch / disconnect) ---
+  socket.on('rejoin', ({ sessionId }) => {
+    if (!sessionId) return;
+
+    const sessionData = sessions.get(sessionId);
+    if (!sessionData) {
+      socket.emit('rejoin-failed');
+      return;
+    }
+
+    const room = rooms.get(sessionData.roomCode);
+    if (!room) {
+      sessions.delete(sessionId);
+      socket.emit('rejoin-failed');
+      return;
+    }
+
+    const pIdx = getPlayerBySession(room, sessionId);
+    if (pIdx === -1) {
+      sessions.delete(sessionId);
+      socket.emit('rejoin-failed');
+      return;
+    }
+
+    // Update socket ID
+    const oldSocketId = room.players[pIdx].socketId;
+    room.players[pIdx].socketId = socket.id;
+    room.players[pIdx].connected = true;
+
+    socket.join(sessionData.roomCode);
+    socket.roomCode = sessionData.roomCode;
+    socket.playerIndex = pIdx;
+    socket.sessionId = sessionId;
+
+    console.log(`Player ${room.players[pIdx].name} rejoined room ${sessionData.roomCode} (${oldSocketId} -> ${socket.id})`);
+
+    // Notify opponent that player is back
+    const opponentIdx = pIdx === 0 ? 1 : 0;
+    if (room.players[opponentIdx] && room.players[opponentIdx].connected) {
+      io.to(room.players[opponentIdx].socketId).emit('opponent-reconnected', {
+        name: room.players[pIdx].name,
+      });
+    }
+
+    // Send current game state back to the reconnecting player
+    const opponent = room.players[opponentIdx];
+    socket.emit('rejoin-success', {
+      roomCode: sessionData.roomCode,
+      playerIndex: pIdx,
+      myName: room.players[pIdx].name,
+      opponentName: opponent ? opponent.name : '',
+      phase: room.phase,
+      myGrid: room.players[pIdx].grid,
+      myMarked: [...room.players[pIdx].marked],
+      myCompletedLines: room.players[pIdx].completedLines,
+      opponentCompletedLines: opponent ? opponent.completedLines : 0,
+      calledNumbers: room.calledNumbers,
+      currentPlayer: room.currentPlayer,
+      winner: room.winner,
+      isMyTurn: room.currentPlayer === pIdx,
+    });
+  });
+
   // --- CREATE ROOM ---
-  socket.on('create-room', ({ name }) => {
+  socket.on('create-room', ({ name, sessionId }) => {
     const code = generateRoomCode();
-    const room = createRoom(code, socket, name || 'Player 1');
+    const room = createRoom(code, socket, name || 'Player 1', sessionId);
     rooms.set(code, room);
     socket.join(code);
     socket.roomCode = code;
     socket.playerIndex = 0;
+    socket.sessionId = sessionId;
+
+    // Store session mapping
+    sessions.set(sessionId, { roomCode: code, playerIndex: 0 });
 
     socket.emit('room-created', { code, playerIndex: 0 });
     console.log(`Room ${code} created by ${name || 'Player 1'}`);
   });
 
   // --- JOIN ROOM ---
-  socket.on('join-room', ({ code, name }) => {
+  socket.on('join-room', ({ code, name, sessionId }) => {
     const upperCode = (code || '').toUpperCase().trim();
     const room = rooms.get(upperCode);
 
@@ -136,20 +229,16 @@ io.on('connection', (socket) => {
     }
 
     // Add player 2
-    room.players[1] = {
-      socketId: socket.id,
-      name: name || 'Player 2',
-      grid: [],
-      marked: new Set(),
-      completedLines: 0,
-      completedLineKeys: new Set(),
-      ready: false,
-    };
+    room.players[1] = createPlayerState(socket.id, name || 'Player 2', sessionId);
 
     socket.join(upperCode);
     socket.roomCode = upperCode;
     socket.playerIndex = 1;
+    socket.sessionId = sessionId;
     room.phase = 'setup';
+
+    // Store session mapping
+    sessions.set(sessionId, { roomCode: upperCode, playerIndex: 1 });
 
     // Notify both players
     socket.emit('room-joined', {
@@ -247,7 +336,6 @@ io.on('connection', (socket) => {
     // Check for winner
     let winner = null;
     if (room.players[0].completedLines >= 5 && room.players[1].completedLines >= 5) {
-      // Both hit 5 at the same time — current player (who called) wins
       winner = room.currentPlayer;
     } else if (room.players[0].completedLines >= 5) {
       winner = 0;
@@ -289,37 +377,37 @@ io.on('connection', (socket) => {
   // --- PLAY AGAIN ---
   socket.on('play-again', () => {
     const room = rooms.get(socket.roomCode);
-    if (!room) return;
+    if (!room || room.phase !== 'gameover') return;
 
     const pIdx = getPlayerIndex(room, socket.id);
     if (pIdx === -1) return;
 
-    // Reset player state
-    room.players[pIdx].grid = [];
-    room.players[pIdx].marked = new Set();
-    room.players[pIdx].completedLines = 0;
-    room.players[pIdx].completedLineKeys = new Set();
-    room.players[pIdx].ready = false;
+    room.players[pIdx].wantsRematch = true;
 
-    // Check if both want to play again
     const opponentIdx = pIdx === 0 ? 1 : 0;
     const opponent = room.players[opponentIdx];
-    if (opponent && !opponent.ready) {
-      // Both are reset — restart
+
+    // Notify opponent
+    if (opponent) {
+      io.to(opponent.socketId).emit('opponent-wants-rematch', {
+        name: room.players[pIdx].name,
+      });
+    }
+
+    // Check if both want to play again
+    if (opponent && opponent.wantsRematch) {
+      // Both want rematch — reset everything
+      resetPlayerForNewGame(room.players[0]);
+      resetPlayerForNewGame(room.players[1]);
       room.calledNumbers = [];
       room.winner = null;
       room.phase = 'setup';
 
       io.to(socket.roomCode).emit('phase-setup');
-      console.log(`Room ${socket.roomCode} restarted`);
+      console.log(`Room ${socket.roomCode} restarted for rematch`);
     } else {
-      // Wait for opponent
+      // Waiting for opponent
       socket.emit('waiting-opponent-rematch');
-      if (opponent) {
-        io.to(opponent.socketId).emit('opponent-wants-rematch', {
-          name: room.players[pIdx].name,
-        });
-      }
     }
   });
 
@@ -335,28 +423,38 @@ io.on('connection', (socket) => {
     const pIdx = getPlayerIndex(room, socket.id);
     if (pIdx === -1) return;
 
+    // Mark as disconnected but don't remove immediately (allow reconnect)
+    room.players[pIdx].connected = false;
+
     const opponentIdx = pIdx === 0 ? 1 : 0;
     const opponent = room.players[opponentIdx];
 
-    if (opponent) {
+    if (opponent && opponent.connected) {
       io.to(opponent.socketId).emit('opponent-disconnected', {
         name: room.players[pIdx].name,
       });
     }
 
-    // Clean up room after a delay
+    // Clean up room after a longer delay (give time to reconnect)
     setTimeout(() => {
       const currentRoom = rooms.get(roomCode);
-      if (currentRoom) {
-        // Check if both players are gone
-        const p0Connected = currentRoom.players[0] && io.sockets.sockets.has(currentRoom.players[0].socketId);
-        const p1Connected = currentRoom.players[1] && io.sockets.sockets.has(currentRoom.players[1].socketId);
+      if (!currentRoom) return;
+
+      // Check if the disconnected player reconnected
+      if (currentRoom.players[pIdx] && !currentRoom.players[pIdx].connected) {
+        // Player never came back — check if both are gone
+        const p0Connected = currentRoom.players[0] && currentRoom.players[0].connected;
+        const p1Connected = currentRoom.players[1] && currentRoom.players[1].connected;
+
         if (!p0Connected && !p1Connected) {
+          // Clean up sessions
+          if (currentRoom.players[0]) sessions.delete(currentRoom.players[0].sessionId);
+          if (currentRoom.players[1]) sessions.delete(currentRoom.players[1].sessionId);
           rooms.delete(roomCode);
           console.log(`Room ${roomCode} deleted (both players left)`);
         }
       }
-    }, 30000);
+    }, 60000); // 60 second grace period for reconnection
   });
 });
 
@@ -366,7 +464,6 @@ server.listen(PORT, () => {
   console.log(`\n🎯 BINGO Server running at:`);
   console.log(`   Local:   http://localhost:${PORT}`);
 
-  // Show network IP for playing from other devices
   const os = require('os');
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {

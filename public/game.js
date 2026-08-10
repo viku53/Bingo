@@ -1,20 +1,34 @@
 /* ============================================
    BINGO MULTIPLAYER — CLIENT GAME LOGIC
-   Socket.io Client
+   Socket.io Client + Session Reconnection
    ============================================ */
 
 (function () {
   'use strict';
 
+  // ==================== SESSION ====================
+  // Unique session ID persisted across reconnects and tab switches
+  let sessionId = sessionStorage.getItem('bingo-session-id');
+  if (!sessionId) {
+    sessionId = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessionStorage.setItem('bingo-session-id', sessionId);
+  }
+
   // ==================== SOCKET ====================
-  const socket = io();
+  const socket = io({
+    reconnection: true,
+    reconnectionAttempts: 20,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+  });
 
   // ==================== STATE ====================
   const state = {
     myName: '',
     opponentName: '',
-    myIndex: -1,       // 0 or 1
-    myGrid: [],        // numbers 1-25 in grid order
+    myIndex: -1,
+    myGrid: [],
     markedIndices: new Set(),
     myCompletedLines: 0,
     opponentCompletedLines: 0,
@@ -23,6 +37,7 @@
     fillSelectedCell: null,
     tempGrid: new Array(25).fill(null),
     roomCode: '',
+    inRoom: false, // tracks if we're actively in a room
   };
 
   // All 12 possible lines
@@ -78,7 +93,7 @@
     // Create room
     $('#btn-create').addEventListener('click', () => {
       state.myName = $('#input-name').value.trim() || 'Player';
-      socket.emit('create-room', { name: state.myName });
+      socket.emit('create-room', { name: state.myName, sessionId });
     });
 
     // Show join form
@@ -102,7 +117,7 @@
         return;
       }
       state.myName = $('#input-name').value.trim() || 'Player';
-      socket.emit('join-room', { code, name: state.myName });
+      socket.emit('join-room', { code, name: state.myName, sessionId });
     }
   }
 
@@ -116,6 +131,7 @@
   // ==================== WAITING SCREEN ====================
   function showWaitingScreen(code) {
     state.roomCode = code;
+    state.inRoom = true;
     showScreen('waiting');
     $('#code-chars').textContent = code;
 
@@ -148,10 +164,18 @@
     const grid = $('#fill-grid');
     grid.innerHTML = '';
 
+    // Re-enable buttons
+    const confirmBtn = $('#btn-confirm-grid');
+    confirmBtn.disabled = true;
+    confirmBtn.querySelector('span').textContent = 'Lock In Grid';
+    $('#btn-fill-random').disabled = false;
+    $('#btn-clear-grid').disabled = false;
+
     for (let i = 0; i < 25; i++) {
       const cell = document.createElement('div');
       cell.className = 'grid-cell';
       cell.dataset.index = i;
+      cell.style.pointerEvents = 'auto'; // ensure clickable
       cell.addEventListener('click', () => {
         $$('#fill-grid .grid-cell').forEach(c => c.classList.remove('selected'));
         cell.classList.add('selected');
@@ -198,11 +222,10 @@
     $('#btn-confirm-grid').onclick = () => {
       state.myGrid = [...state.tempGrid];
       socket.emit('grid-ready', { grid: state.myGrid });
-      $('#btn-confirm-grid').disabled = true;
-      $('#btn-confirm-grid').querySelector('span').textContent = 'Waiting for opponent...';
+      confirmBtn.disabled = true;
+      confirmBtn.querySelector('span').textContent = 'Waiting for opponent...';
       $('#btn-fill-random').disabled = true;
       $('#btn-clear-grid').disabled = true;
-      // Disable grid interaction
       $$('#fill-grid .grid-cell').forEach(c => {
         c.style.pointerEvents = 'none';
       });
@@ -234,7 +257,6 @@
     if (state.fillSelectedCell === null) return;
     const grid = $('#fill-grid');
 
-    // Remove from old position if exists
     const oldIdx = state.tempGrid.indexOf(num);
     if (oldIdx !== -1) {
       state.tempGrid[oldIdx] = null;
@@ -248,7 +270,6 @@
     cell.classList.add('filled');
     cell.classList.remove('selected');
 
-    // Move to next empty cell
     state.fillSelectedCell = state.tempGrid.indexOf(null);
     if (state.fillSelectedCell !== -1) {
       $$('#fill-grid .grid-cell').forEach(c => c.classList.remove('selected'));
@@ -271,7 +292,6 @@
     const coin = $('#coin');
     const isMyTurn = (firstPlayer === state.myIndex);
 
-    // Determine coin animation
     coin.className = 'coin flipping' + (firstPlayer === 1 ? ' land-tails' : '');
 
     setTimeout(() => {
@@ -281,8 +301,6 @@
       } else {
         resultEl.textContent = `${firstPlayerName} goes first`;
       }
-
-      // Auto-transition to game after a moment
       setTimeout(() => startGame(firstPlayer), 1500);
     }, 2200);
   }
@@ -297,24 +315,88 @@
     state.calledNumbers = [];
     state.isMyTurn = (firstPlayer === state.myIndex);
 
-    // Names
     $('#your-name-display').textContent = state.myName;
     $('#opp-name-display').textContent = state.opponentName;
 
-    // Reset BINGO letters
     $$('#bingo-you .bingo-letter, #bingo-opp .bingo-letter').forEach(l => l.classList.remove('lit'));
 
-    // Render grid
     renderGameGrid();
-
-    // Render number pad
     renderNumberPad();
 
-    // Called numbers
     $('#called-numbers').innerHTML = '';
 
-    // Update turn
     updateTurnUI();
+  }
+
+  // Restore game state after reconnect
+  function restoreGameState(data) {
+    state.myIndex = data.playerIndex;
+    state.myName = data.myName;
+    state.opponentName = data.opponentName;
+    state.roomCode = data.roomCode;
+    state.inRoom = true;
+    state.myGrid = data.myGrid;
+    state.calledNumbers = data.calledNumbers;
+    state.myCompletedLines = data.myCompletedLines;
+    state.opponentCompletedLines = data.opponentCompletedLines;
+    state.markedIndices = new Set(data.myMarked);
+    state.isMyTurn = data.isMyTurn;
+
+    // Hide disconnect overlay if showing
+    $('#overlay-disconnect').classList.add('hidden');
+
+    if (data.phase === 'waiting') {
+      showWaitingScreen(data.roomCode);
+    } else if (data.phase === 'setup') {
+      showGridSetup();
+    } else if (data.phase === 'playing') {
+      showScreen('game');
+
+      $('#your-name-display').textContent = state.myName;
+      $('#opp-name-display').textContent = state.opponentName;
+
+      // Render grid with marks
+      renderGameGrid();
+      state.markedIndices.forEach(idx => {
+        const cell = $('#game-grid').children[idx];
+        if (cell) cell.classList.add('marked');
+      });
+
+      // Check which lines are complete and highlight them
+      LINES.forEach(line => {
+        const isComplete = line.every(idx => state.markedIndices.has(idx));
+        if (isComplete) {
+          line.forEach(idx => {
+            const cell = $('#game-grid').children[idx];
+            if (cell) cell.classList.add('line-complete');
+          });
+        }
+      });
+
+      // Render number pad with called numbers
+      renderNumberPad();
+      state.calledNumbers.forEach(num => {
+        const btn = $(`.num-btn[data-number="${num}"]`);
+        if (btn) { btn.classList.add('called'); btn.disabled = true; }
+      });
+
+      // Render called numbers display
+      $('#called-numbers').innerHTML = '';
+      state.calledNumbers.forEach(num => {
+        const el = document.createElement('div');
+        el.className = 'called-num';
+        el.textContent = num;
+        $('#called-numbers').appendChild(el);
+      });
+
+      // Update BINGO letters
+      updateBingoLetters('bingo-you', state.myCompletedLines);
+      updateBingoLetters('bingo-opp', state.opponentCompletedLines);
+
+      updateTurnUI();
+    } else if (data.phase === 'gameover') {
+      showGameOver(data.winner === state.myIndex);
+    }
   }
 
   function renderGameGrid() {
@@ -341,7 +423,6 @@
         if (!state.isMyTurn) return;
         if (state.calledNumbers.includes(n)) return;
         socket.emit('call-number', { number: n });
-        // Disable pad until server responds
         setNumberPadEnabled(false);
       });
       pad.appendChild(btn);
@@ -373,24 +454,21 @@
 
   function handleNumberCalled(data) {
     const {
-      number, calledByName, yourGridIndex, yourNewLines,
+      number, yourGridIndex, yourNewLines,
       yourCompletedLines, opponentCompletedLines, opponentNewLines,
-      nextPlayer, winner, winnerName
+      nextPlayer, winner
     } = data;
 
     state.calledNumbers.push(number);
 
-    // Update number pad
     const btn = $(`.num-btn[data-number="${number}"]`);
     if (btn) { btn.classList.add('called'); btn.disabled = true; }
 
-    // Add to called numbers display
     const calledEl = document.createElement('div');
     calledEl.className = 'called-num';
     calledEl.textContent = number;
     $('#called-numbers').appendChild(calledEl);
 
-    // Mark on my grid
     if (yourGridIndex !== -1) {
       state.markedIndices.add(yourGridIndex);
       const cell = $('#game-grid').children[yourGridIndex];
@@ -398,7 +476,6 @@
       setTimeout(() => cell.classList.remove('just-marked'), 400);
     }
 
-    // Update my completed lines
     state.myCompletedLines = yourCompletedLines;
     if (yourNewLines && yourNewLines.length > 0) {
       yourNewLines.forEach(line => {
@@ -406,17 +483,14 @@
           $('#game-grid').children[idx].classList.add('line-complete');
         });
       });
-      // Light up BINGO letters
       updateBingoLetters('bingo-you', yourCompletedLines);
     }
 
-    // Update opponent completed lines
     state.opponentCompletedLines = opponentCompletedLines;
     if (opponentNewLines && opponentNewLines.length > 0) {
       updateBingoLetters('bingo-opp', opponentCompletedLines);
     }
 
-    // Check winner
     if (winner !== null) {
       setTimeout(() => {
         showGameOver(winner === state.myIndex);
@@ -424,7 +498,6 @@
       return;
     }
 
-    // Switch turn
     state.isMyTurn = (nextPlayer === state.myIndex);
     updateTurnUI();
   }
@@ -434,6 +507,8 @@
     for (let i = 0; i < 5; i++) {
       if (i < count) {
         letters[i].classList.add('lit');
+      } else {
+        letters[i].classList.remove('lit');
       }
     }
   }
@@ -441,6 +516,11 @@
   // ==================== GAME OVER ====================
   function showGameOver(isWinner) {
     showScreen('gameover');
+
+    // Reset play again button
+    const playAgainBtn = $('#btn-play-again');
+    playAgainBtn.disabled = false;
+    playAgainBtn.textContent = 'Play Again';
 
     if (isWinner) {
       $('#result-icon').textContent = '🏆';
@@ -455,10 +535,9 @@
       $('#result-subtitle').textContent = `${state.opponentName} completed BINGO first.`;
     }
 
-    // Force re-trigger win letter animations
     $$('.win-letter').forEach(l => {
       l.style.animation = 'none';
-      l.offsetHeight; // reflow
+      l.offsetHeight;
       l.style.animation = '';
     });
   }
@@ -517,50 +596,84 @@
   function initGameOverButtons() {
     $('#btn-play-again').addEventListener('click', () => {
       socket.emit('play-again');
-      $('#btn-play-again').disabled = true;
-      $('#btn-play-again').textContent = 'Waiting for opponent...';
+      const btn = $('#btn-play-again');
+      btn.disabled = true;
+      btn.textContent = 'Waiting for opponent...';
     });
 
     $('#btn-home').addEventListener('click', () => {
+      // Clear session so we get a fresh one
+      sessionStorage.removeItem('bingo-session-id');
       location.reload();
     });
 
     $('#btn-back-home').addEventListener('click', () => {
+      sessionStorage.removeItem('bingo-session-id');
       location.reload();
     });
   }
 
   // ==================== SOCKET EVENTS ====================
   function initSocketEvents() {
-    // Room created
+    // --- Connection events ---
+    socket.on('connect', () => {
+      $('#connection-status').classList.remove('disconnected');
+      $('#connection-status').querySelector('span').textContent = 'Connected';
+
+      // Try to rejoin if we were in a room
+      if (state.inRoom) {
+        socket.emit('rejoin', { sessionId });
+      }
+    });
+
+    socket.on('disconnect', () => {
+      $('#connection-status').classList.add('disconnected');
+      $('#connection-status').querySelector('span').textContent = 'Reconnecting...';
+    });
+
+    socket.on('reconnect_failed', () => {
+      $('#connection-status').querySelector('span').textContent = 'Disconnected';
+    });
+
+    // --- Rejoin responses ---
+    socket.on('rejoin-success', (data) => {
+      console.log('Rejoined room successfully!', data.roomCode);
+      restoreGameState(data);
+    });
+
+    socket.on('rejoin-failed', () => {
+      console.log('Rejoin failed — starting fresh');
+      state.inRoom = false;
+      showScreen('welcome');
+    });
+
+    // --- Room events ---
     socket.on('room-created', ({ code, playerIndex }) => {
       state.myIndex = playerIndex;
+      state.inRoom = true;
       showWaitingScreen(code);
     });
 
-    // Room joined (I am joining)
     socket.on('room-joined', ({ code, playerIndex, opponentName }) => {
       state.myIndex = playerIndex;
       state.roomCode = code;
       state.opponentName = opponentName;
+      state.inRoom = true;
     });
 
-    // Opponent joined my room
     socket.on('opponent-joined', ({ opponentName }) => {
       state.opponentName = opponentName;
     });
 
-    // Join error
     socket.on('join-error', ({ message }) => {
       showJoinError(message);
     });
 
-    // Phase: setup
+    // --- Game phases ---
     socket.on('phase-setup', () => {
       showGridSetup();
     });
 
-    // Opponent ready
     socket.on('opponent-ready', () => {
       const oppStatus = $('#opponent-status');
       if (oppStatus) {
@@ -569,48 +682,44 @@
       }
     });
 
-    // Game start (coin toss result)
     socket.on('game-start', ({ firstPlayer, firstPlayerName, yourIndex }) => {
       state.myIndex = yourIndex;
       showCoinToss(firstPlayer, firstPlayerName);
     });
 
-    // Number called
     socket.on('number-called', (data) => {
       handleNumberCalled(data);
     });
 
-    // Not your turn
     socket.on('not-your-turn', () => {
       updateTurnUI();
     });
 
-    // Opponent disconnected
+    // --- Disconnect / Reconnect ---
     socket.on('opponent-disconnected', ({ name }) => {
       const overlay = $('#overlay-disconnect');
       overlay.classList.remove('hidden');
-      $('#disconnect-text').textContent = `${name} has left the game.`;
+      $('#disconnect-text').textContent = `${name} lost connection. Waiting for them to reconnect...`;
     });
 
-    // Opponent wants rematch
+    socket.on('opponent-reconnected', ({ name }) => {
+      // Hide disconnect overlay
+      $('#overlay-disconnect').classList.add('hidden');
+    });
+
+    // --- Rematch ---
     socket.on('opponent-wants-rematch', ({ name }) => {
-      // Auto-accept — go to setup
+      // Show a notification or auto-accept by also clicking play again
+      // For now, show on the button
+      const btn = $('#btn-play-again');
+      if (btn && !btn.disabled) {
+        btn.textContent = `${name} wants rematch! Click to accept`;
+        btn.classList.add('btn-glow');
+      }
     });
 
-    // Waiting for opponent rematch
     socket.on('waiting-opponent-rematch', () => {
       // Already showing "Waiting..." on button
-    });
-
-    // Connection status
-    socket.on('connect', () => {
-      $('#connection-status').classList.remove('disconnected');
-      $('#connection-status').querySelector('span').textContent = 'Connected';
-    });
-
-    socket.on('disconnect', () => {
-      $('#connection-status').classList.add('disconnected');
-      $('#connection-status').querySelector('span').textContent = 'Disconnected';
     });
   }
 
