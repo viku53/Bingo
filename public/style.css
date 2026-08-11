@@ -48,13 +48,17 @@
 }
 
 /* ---------- Reset ---------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html { font-size: 16px; }
+html {
+  font-size: 16px;
+}
 
 body {
   font-family: var(--font-primary);
@@ -89,10 +93,23 @@ body {
 }
 
 @keyframes float {
-  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.12; }
-  90% { opacity: 0.12; }
-  100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.12;
+  }
+
+  90% {
+    opacity: 0.12;
+  }
+
+  100% {
+    transform: translateY(-10vh) rotate(720deg);
+    opacity: 0;
+  }
 }
 
 /* ---------- Screens ---------- */
@@ -148,32 +165,63 @@ body {
   box-shadow: 0 4px 15px var(--accent-glow);
 }
 
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--accent-glow); }
-.btn-primary:active { transform: translateY(0); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px var(--accent-glow);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .btn-secondary {
   background: var(--bg-card-hover);
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);
 }
-.btn-secondary:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--border-active); }
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-active);
+}
 
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
   padding: 10px 20px;
 }
-.btn-ghost:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
 
-.btn-glow { animation: btnPulse 2s ease-in-out infinite; }
-
-@keyframes btnPulse {
-  0%, 100% { box-shadow: 0 4px 15px var(--accent-glow); }
-  50% { box-shadow: 0 4px 30px var(--accent-glow), 0 0 60px rgba(124, 58, 237, 0.15); }
+.btn-ghost:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.hidden { display: none !important; }
+.btn-glow {
+  animation: btnPulse 2s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 15px var(--accent-glow);
+  }
+
+  50% {
+    box-shadow: 0 4px 30px var(--accent-glow), 0 0 60px rgba(124, 58, 237, 0.15);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
 
 /* ============================================
    WELCOME SCREEN
@@ -198,8 +246,17 @@ body {
 }
 
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.4; transform: translate(-50%, -65%) scale(1); }
-  50% { opacity: 0.7; transform: translate(-50%, -65%) scale(1.1); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(-50%, -65%) scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: translate(-50%, -65%) scale(1.1);
+  }
 }
 
 .game-title {
@@ -222,8 +279,15 @@ body {
 }
 
 @keyframes letterBounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .tagline {
@@ -235,9 +299,13 @@ body {
   text-transform: uppercase;
 }
 
-.welcome-actions { margin-bottom: 16px; }
+.welcome-actions {
+  margin-bottom: 16px;
+}
 
-.name-input-group { margin-bottom: 20px; }
+.name-input-group {
+  margin-bottom: 20px;
+}
 
 .input-group {
   text-align: left;
@@ -272,7 +340,9 @@ body {
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
 }
 
-.input-group input::placeholder { color: var(--text-muted); }
+.input-group input::placeholder {
+  color: var(--text-muted);
+}
 
 .code-input {
   text-align: center;
@@ -288,7 +358,9 @@ body {
   gap: 12px;
 }
 
-.action-buttons .btn { flex: 1; }
+.action-buttons .btn {
+  flex: 1;
+}
 
 .join-form {
   margin-top: 20px;
@@ -306,7 +378,9 @@ body {
   font-size: 0.9rem;
 }
 
-.rules-hint { margin-top: 20px; }
+.rules-hint {
+  margin-top: 20px;
+}
 
 /* ============================================
    RULES MODAL
@@ -324,7 +398,10 @@ body {
   padding: 20px;
 }
 
-.modal.active { opacity: 1; pointer-events: all; }
+.modal.active {
+  opacity: 1;
+  pointer-events: all;
+}
 
 .modal-overlay {
   position: absolute;
@@ -344,8 +421,15 @@ body {
 }
 
 @keyframes modalIn {
-  from { transform: translateY(20px) scale(0.97); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(20px) scale(0.97);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .modal-close {
@@ -363,7 +447,10 @@ body {
   transition: var(--transition);
 }
 
-.modal-close:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
 
 .modal-content h2 {
   font-family: var(--font-display);
@@ -381,10 +468,28 @@ body {
   padding: 14px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
-.rule-item:last-child { border-bottom: none; }
-.rule-icon { font-size: 1.4rem; flex-shrink: 0; width: 36px; text-align: center; }
-.rule-item strong { display: block; margin-bottom: 4px; }
-.rule-item p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; }
+
+.rule-item:last-child {
+  border-bottom: none;
+}
+
+.rule-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.rule-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rule-item p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
 
 /* ============================================
    WAITING SCREEN
@@ -405,7 +510,11 @@ body {
   justify-content: center;
 }
 
-.waiting-emoji { font-size: 2.5rem; position: relative; z-index: 1; }
+.waiting-emoji {
+  font-size: 2.5rem;
+  position: relative;
+  z-index: 1;
+}
 
 .pulse-ring {
   position: absolute;
@@ -415,11 +524,20 @@ body {
   animation: pulseRing 2s ease-out infinite;
 }
 
-.pulse-ring.delay { animation-delay: 1s; }
+.pulse-ring.delay {
+  animation-delay: 1s;
+}
 
 @keyframes pulseRing {
-  0% { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }
 
 .waiting-text {
@@ -512,8 +630,15 @@ body {
 }
 
 @keyframes statusBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .grid-wrapper {
@@ -549,7 +674,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.grid-cell:hover { border-color: var(--border-active); background: var(--bg-card-hover); }
+.grid-cell:hover {
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+}
 
 .grid-cell.filled {
   background: rgba(124, 58, 237, 0.1);
@@ -583,9 +711,17 @@ body {
 }
 
 @keyframes markPop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .grid-cell.line-complete {
@@ -631,7 +767,10 @@ body {
   color: var(--accent-3);
 }
 
-.remaining-num.used { opacity: 0.2; pointer-events: none; }
+.remaining-num.used {
+  opacity: 0.2;
+  pointer-events: none;
+}
 
 .fill-actions {
   display: flex;
@@ -640,12 +779,17 @@ body {
   flex-wrap: wrap;
 }
 
-.fill-actions .btn { padding: 12px 20px; font-size: 0.9rem; }
+.fill-actions .btn {
+  padding: 12px 20px;
+  font-size: 0.9rem;
+}
 
 /* ============================================
    COIN TOSS SCREEN
    ============================================ */
-.coin-toss-container { text-align: center; }
+.coin-toss-container {
+  text-align: center;
+}
 
 .coin-toss-subtitle {
   color: var(--text-secondary);
@@ -678,19 +822,47 @@ body {
 }
 
 @keyframes coinFlip {
-  0% { transform: rotateX(0) translateY(0); }
-  20% { transform: rotateX(900deg) translateY(-100px); }
-  50% { transform: rotateX(1800deg) translateY(-50px); }
-  80% { transform: rotateX(3060deg) translateY(-10px); }
-  100% { transform: rotateX(3600deg) translateY(0); }
+  0% {
+    transform: rotateX(0) translateY(0);
+  }
+
+  20% {
+    transform: rotateX(900deg) translateY(-100px);
+  }
+
+  50% {
+    transform: rotateX(1800deg) translateY(-50px);
+  }
+
+  80% {
+    transform: rotateX(3060deg) translateY(-10px);
+  }
+
+  100% {
+    transform: rotateX(3600deg) translateY(0);
+  }
 }
 
 @keyframes coinFlipTails {
-  0% { transform: rotateX(0) translateY(0); }
-  20% { transform: rotateX(900deg) translateY(-100px); }
-  50% { transform: rotateX(1800deg) translateY(-50px); }
-  80% { transform: rotateX(3060deg) translateY(-10px); }
-  100% { transform: rotateX(3780deg) translateY(0); }
+  0% {
+    transform: rotateX(0) translateY(0);
+  }
+
+  20% {
+    transform: rotateX(900deg) translateY(-100px);
+  }
+
+  50% {
+    transform: rotateX(1800deg) translateY(-50px);
+  }
+
+  80% {
+    transform: rotateX(3060deg) translateY(-10px);
+  }
+
+  100% {
+    transform: rotateX(3780deg) translateY(0);
+  }
 }
 
 .coin-face {
@@ -765,8 +937,13 @@ body {
   text-overflow: ellipsis;
 }
 
-.you-info .info-name { color: var(--p1-color); }
-.opp-info .info-name { color: var(--p2-color); }
+.you-info .info-name {
+  color: var(--p1-color);
+}
+
+.opp-info .info-name {
+  color: var(--p2-color);
+}
 
 .vs-badge {
   width: 36px;
@@ -821,9 +998,17 @@ body {
 }
 
 @keyframes letterLit {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Turn Indicator */
@@ -975,8 +1160,15 @@ body {
 }
 
 @keyframes resultBounce {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-12px) rotate(3deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(3deg);
+  }
 }
 
 .result-title {
@@ -1023,9 +1215,19 @@ body {
 }
 
 @keyframes winPop {
-  0% { opacity: 0; transform: scale(0) rotate(-15deg); }
-  60% { transform: scale(1.2) rotate(3deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-15deg);
+  }
+
+  60% {
+    transform: scale(1.2) rotate(3deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
 }
 
 .result-subtitle {
@@ -1034,7 +1236,9 @@ body {
   font-size: 1rem;
 }
 
-.gameover-container .btn { margin: 0 6px 10px; }
+.gameover-container .btn {
+  margin: 0 6px 10px;
+}
 
 #confetti-canvas {
   position: fixed;
@@ -1065,9 +1269,22 @@ body {
   width: 100%;
 }
 
-.overlay-icon { font-size: 3rem; margin-bottom: 14px; }
-.overlay-content h3 { font-family: var(--font-display); margin-bottom: 10px; font-size: 1.3rem; }
-.overlay-content p { color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem; }
+.overlay-icon {
+  font-size: 3rem;
+  margin-bottom: 14px;
+}
+
+.overlay-content h3 {
+  font-family: var(--font-display);
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+}
+
+.overlay-content p {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
 
 /* ============================================
    CONNECTION STATUS
@@ -1095,31 +1312,270 @@ body {
   background: var(--success);
 }
 
-.connection-status.disconnected .conn-dot { background: var(--p2-color); }
-.connection-status.disconnected span { color: var(--p2-color); }
+.connection-status.disconnected .conn-dot {
+  background: var(--p2-color);
+}
+
+.connection-status.disconnected span {
+  color: var(--p2-color);
+}
 
 /* ============================================
    SCROLLBAR
    ============================================ */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
 
 /* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 480px) {
-  .game-title { font-size: 3.5rem; letter-spacing: 6px; }
-  .tagline { font-size: 0.9rem; }
+  .game-title {
+    font-size: 3.5rem;
+    letter-spacing: 6px;
+  }
 
-  .grid-cell { width: 54px; height: 54px; font-size: 1.15rem; }
+  .tagline {
+    font-size: 0.9rem;
+  }
 
-  .code-char { font-size: 2rem; }
+  .grid-cell {
+    width: 54px;
+    height: 54px;
+    font-size: 1.15rem;
+  }
 
-  .bingo-letters.small .bingo-letter { width: 24px; height: 24px; font-size: 0.75rem; }
+  .code-char {
+    font-size: 2rem;
+  }
+
+  .bingo-letters.small .bingo-letter {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ---------- Below 400px (small phones) ---------- */
+@media (max-width: 400px) {
+
+  /* Screen container: let it scroll if needed */
+  .screen {
+    padding: 12px 10px;
+  }
+
+  /* Game container: tighter gaps, constrain to viewport */
+  .game-container {
+    gap: 8px;
+    max-width: 100%;
+    padding-bottom: 30px;
+  }
+
+  /* Top bar: prevent horizontal overflow */
+  .game-top-bar {
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .player-info {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .info-name {
+    font-size: 0.72rem;
+    margin-bottom: 4px;
+  }
+
+  .vs-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  /* BINGO letters in top bar: smaller on tiny screens */
+  .bingo-letters.small {
+    gap: 2px;
+  }
+
+  .bingo-letters.small .bingo-letter {
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+    border-radius: 4px;
+  }
+
+  /* Turn indicator */
+  .turn-indicator {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    gap: 8px;
+  }
+
+  /* Grid cells: scale to fit 5 columns + gaps within ~95vw */
+  .bingo-grid {
+    gap: 4px;
+  }
+
+  .grid-cell {
+    width: 50px;
+    height: 50px;
+    font-size: 1rem;
+    border-radius: 6px;
+  }
+
+  /* Number pad */
+  .number-pad {
+    gap: 4px;
+    max-width: 280px;
+  }
+
+  .num-btn {
+    height: 38px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  /* Called numbers */
+  .called-numbers {
+    max-height: 50px;
+  }
+
+  .called-num {
+    width: 22px;
+    height: 22px;
+    font-size: 0.6rem;
+  }
+
+  .called-label {
+    font-size: 0.65rem;
+    margin-bottom: 4px;
+  }
+
+  /* Section title for other screens */
+  .section-title {
+    font-size: 1.5rem;
+  }
+
+  /* Setup screen */
+  .setup-subtitle {
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
+
+  .remaining-numbers {
+    max-width: 280px;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  .remaining-num {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .fill-actions .btn {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+
+  /* Welcome screen */
+  .welcome-container {
+    max-width: 100%;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
 }
 
 @media (max-width: 360px) {
-  .grid-cell { width: 48px; height: 48px; font-size: 1rem; }
-  .game-title { font-size: 3rem; }
+  .grid-cell {
+    width: 46px;
+    height: 46px;
+    font-size: 0.95rem;
+  }
+
+  .game-title {
+    font-size: 3rem;
+  }
+
+  .num-btn {
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .number-pad {
+    max-width: 260px;
+  }
+
+  .bingo-letters.small .bingo-letter {
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+  }
+
+  .info-name {
+    font-size: 0.68rem;
+  }
+
+  .vs-badge {
+    width: 24px;
+    height: 24px;
+    font-size: 0.6rem;
+  }
+
+  .turn-indicator {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ---------- Below 340px (very small phones) ---------- */
+@media (max-width: 340px) {
+  .grid-cell {
+    width: 42px;
+    height: 42px;
+    font-size: 0.9rem;
+  }
+
+  .bingo-grid {
+    gap: 3px;
+  }
+
+  .number-pad {
+    gap: 3px;
+    max-width: 240px;
+  }
+
+  .num-btn {
+    height: 34px;
+    font-size: 0.8rem;
+  }
+
+  .game-top-bar {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .game-title {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+  }
 }
